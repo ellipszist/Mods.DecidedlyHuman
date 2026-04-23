@@ -80,9 +80,12 @@ public class FarmAnimalSpawnsFeature : Feature
 
         this.Enabled = true;
 
-        // This is necessary in order to have animals spawn on the first day, since we otherwise
-        // add this on day end.
-        Game1.addMorningFluffFunction(this.DayStartAction);
+        if (Context.IsMainPlayer)
+        {
+            // This is necessary in order to have animals spawn on the first day, since we otherwise
+            // add this on day end.
+            Game1.addMorningFluffFunction(this.DayStartAction);
+        }
     }
 
     public override void Disable()
@@ -239,6 +242,17 @@ public class FarmAnimalSpawnsFeature : Feature
                 if (animal.Value.SkinId is null)
                     animal.Value.SkinId = "";
 
+                if (string.IsNullOrWhiteSpace(animal.Key))
+                {
+                    logger.Error($"The animal's key in the spawn data dictionary was blank. Not spawning as a precaution. Please report this to the author of the pack that adds this animal and me (DecidedlyHuman).");
+                    logger.Log($"Use the following information to try to track down the pack that adds the animal:", LogLevel.Info);
+                    logger.Log($"Name: {animal.Value.DisplayName}", LogLevel.Info);
+                    logger.Log($"Animal ID: {animal.Value.AnimalId}", LogLevel.Info);
+                    logger.Log($"Location ID: {animal.Value.LocationId}", LogLevel.Info);
+
+                    continue;
+                }
+
                 FarmAnimal babbyAnimal = new FarmAnimal(animal.Value.AnimalId, multiplayer.getNewID(), -1L)
                 {
                     skinID = { animal.Value.SkinId },
@@ -262,20 +276,24 @@ public class FarmAnimalSpawnsFeature : Feature
                     if (existingAnimal.modData is null)
                         continue;
 
-                    bool hasFarmAnimalValue = babbyAnimal.modData.TryGetValue("MEEP_Farm_Animal", out string isMeepAnimal);
+                    bool hasFarmAnimalValue = existingAnimal.modData.TryGetValue("MEEP_Farm_Animal", out string isMeepAnimal);
                     bool hasFarmAnimalId = existingAnimal.modData.TryGetValue("MEEP_Farm_Animal_ID", out string id);
 
                     if (hasFarmAnimalId || hasFarmAnimalValue)
                     {
                         if (id == animal.Key)
                         {
-                            logger.Error(
-                                $"Animal {babbyAnimal.Name} already exists with MEEP id {id} in {targetLocation.Name}. This means removal failed to happen for some reason. Attempting to fix it automatically.");
+                            logger.Log(
+                                $"Animal {babbyAnimal.Name} already exists with MEEP id {id} in {targetLocation.Name}. This means removal failed to happen for some reason. Attempting to fix it automatically.", LogLevel.Trace);
                             glitchedAnimals.Add(existingAnimal);
                         }
                         else if (string.IsNullOrWhiteSpace(id))
                         {
                             logger.Error($"The animal has MEEP's animal key ID, but it's blank. Please report this to the author of the pack that adds this animal and me (DecidedlyHuman).");
+                            logger.Log($"Use the following information to try to track down the pack that adds the animal:");
+                            logger.Log($"Name: {animal.Value.DisplayName}");
+                            logger.Log($"Animal ID: {animal.Value.AnimalId}");
+                            logger.Log($"Location ID: {animal.Value.LocationId}");
                         }
                     }
                 }
@@ -289,13 +307,13 @@ public class FarmAnimalSpawnsFeature : Feature
                         if (gotMeepId)
                             logger.Error($"Couldn't remove glitched animal {glitchedAnimal.Name} with MEEP ID {meepId} because its current location was null. Please report this to DecidedlyHuman for advice on how to manually fix the issue.");
                         else
-                            logger.Error($"Couldn't remove glitched animal {glitchedAnimal.Name}.");
+                            logger.Error($"Couldn't remove glitched animal {glitchedAnimal.Name} because its current location was null. Please report this to DecidedlyHuman for advice on how to manually fix the issue.");
 
                         return;
                     }
 
                     glitchedAnimal.currentLocation.Animals.Remove(glitchedAnimal.myID.Value);
-                    logger.Log($"Removed glitched animal {glitchedAnimal.Name} from {glitchedAnimal.currentLocation.Name}.", LogLevel.Trace);
+                    logger.Log($"Safely removed animal {glitchedAnimal.Name} from {glitchedAnimal.currentLocation.Name}.", LogLevel.Trace);
                 }
 
                 targetLocation.animals.Add(babbyAnimal.myID.Value, babbyAnimal);
