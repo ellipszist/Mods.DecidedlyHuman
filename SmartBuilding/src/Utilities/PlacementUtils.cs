@@ -143,26 +143,23 @@ namespace SmartBuilding.Utilities
 
                     if (here.objects.ContainsKey(v))
                     {
-                        // We know an object exists here now, so we grab it.
-                        var o = here.objects[v];
-                        ItemType type;
-                        Item itemToDestroy;
-
-                        itemToDestroy = Utility.fuzzyItemSearch(o.Name);
-                        type = this.identificationUtils.IdentifyItemType((SObject)itemToDestroy);
+                        SObject o = here.objects[v];
+                        ItemType type = this.identificationUtils.IdentifyItemType(o);
 
                         if (type == ItemType.Fence)
-                            // This is a fence, so we return true.
                             return true;
                     }
 
-                    // Here, we want to display a message if the floor COULD be placed if the appropriate setting were enabled.
-                    if (!here.isTileLocationOpen(v) && !this.config.LessRestrictiveFloorPlacement)
+                    bool itemCanBePlaced = here.CanItemBePlacedHere(v);
+
+                    if (!itemCanBePlaced && !this.config.LessRestrictiveFloorPlacement)
+                    {
                         this.logger.Log(I18n.SmartBuilding_Message_CheatyOptions_MoreLaxFloorPlacement_Disabled(),
                             LogLevel.Trace, true);
+                    }
 
                     // At this point, we return appropriately with vanilla logic, or true depending on the placement setting.
-                    return this.config.LessRestrictiveFloorPlacement || here.isTileLocationOpen(v);
+                    return this.config.LessRestrictiveFloorPlacement || itemCanBePlaced;
                 case ItemType.Chest:
                     // We want to be extra safe here, so we confirm it is in fact of type Chest.
                     if (i is Chest)
