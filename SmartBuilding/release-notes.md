@@ -1,4 +1,7 @@
 # Smart Building release notes
+## 1.9.5
+#### Fixes
+* Fixed horrible performance using rectangle tool with flooring being placed under existing objects.
 ## 1.9.4
 #### Additions
 * Compatibility with Agromancy essences. Now when you plant seeds via Smart Building, they should retain their Agromancy essences.
